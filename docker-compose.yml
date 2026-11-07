@@ -27,5 +27,43 @@ services:
         - "8025:8025"              # web inbox  → http://localhost:8025
         - "1025:1025"              # SMTP       (host-run Rails can send too)
 
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/rails
+    environment: &app_env
+      MONGODB_URI: mongodb://mongo:27017/wait_in_line_development?replicaSet=rs0
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      APP_HOST: localhost:3000            # used for links in emails
+      NO_SHOW_GRACE_SECONDS: "60"
+      SERVICE_SECONDS_PER_PERSON: "3"
+    depends_on:
+      mongo:
+        condition: service_healthy        # wait for the replica set, not just the process
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/up"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  scheduler:
+    build: .
+    command: ["bin/rails", "waitlist:tick_forever"]
+    volumes:
+      - .:/rails
+    environment: *app_env
+    depends_on:
+      mongo:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   mongo-data:
