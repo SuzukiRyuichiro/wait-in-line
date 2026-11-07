@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+# Remove a pid file left behind by an unclean shutdown
+rm -f tmp/pids/server.pid
+
+# Only the web server creates indexes, so the scheduler doesn't also run it
+if [ "$1" = "bin/rails" ] && [ "$2" = "server" ]; then
+  bin/rails db:mongoid:create_indexes
+fi
+
+exec "$@"
