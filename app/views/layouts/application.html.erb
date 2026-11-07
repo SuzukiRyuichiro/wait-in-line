@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="bumblebee">
   <head>
     <title><%= content_for(:title) || "Wait In Line" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -21,6 +21,11 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app %>
     <%= javascript_importmap_tags %>
+
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5.7.50" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.5"></script>
+    <!--TODO: perhaps remove this-->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
   </head>
 
   <body>
