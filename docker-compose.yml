@@ -65,5 +65,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.65.0-noble
+    profiles: ["e2e"]
+    working_dir: /e2e
+    volumes:
+      - ./e2e:/e2e
+      - /e2e/node_modules
+    environment:
+      BASE_URL: http://web:3000
+      MAILPIT_URL: http://mailpit:8025
+      CI: "1"
+    depends_on:
+      web:
+        condition: service_healthy
+    command: ["sh", "-c", "npm ci && npx playwright test"]
+
+
 volumes:
   mongo-data:
