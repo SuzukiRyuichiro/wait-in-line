@@ -30,6 +30,12 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # Testing framework for Rails [https://github.com/rspec/rspec-rails]
+  gem "rspec-rails", "~> 8.1"
+
+  # Fixture replacement for building test data [https://github.com/thoughtbot/factory_bot_rails]
+  gem "factory_bot_rails", "~> 6.5"
 end
 
 group :development do
