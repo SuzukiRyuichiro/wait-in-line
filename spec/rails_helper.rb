@@ -56,4 +56,15 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  config.include FactoryBot::Syntax::Methods
+  config.include ActiveSupport::Testing::TimeHelpers  # travel_to / freeze_time for timers
+
+  # No AR = no transactional fixtures. Instead:
+  # - create indexes once (the unique indexes are the duplicate-join guarantee,
+  #   so specs must run against them)
+  # - empty every collection before each example but KEEP the indexes.
+  config.before(:suite) { Mongoid::Tasks::Database.create_indexes }
+  config.before(:each)  { Mongoid.truncate! }
+
 end
