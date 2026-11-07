@@ -32,7 +32,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/rails
+      - .:/rails:z
     environment: &app_env
       MONGODB_URI: mongodb://mongo:27017/wait_in_line_development?replicaSet=rs0
       SMTP_HOST: mailpit
@@ -56,7 +56,7 @@ services:
     build: .
     command: ["bin/rails", "waitlist:tick_forever"]
     volumes:
-      - .:/rails
+      - .:/rails:z
     environment: *app_env
     depends_on:
       mongo:
