@@ -13,18 +13,18 @@ module RuboCop
       #
       # @example
       #   # bad
-      #   %w[completed no_show].each do |status|
-      #     it "lets the diner rejoin once the party is #{status}" do
+      #   %w[ready seated].each do |status|
+      #     it "still counts as a duplicate while the party is #{status}" do
       #       ...
       #     end
       #   end
       #
       #   # good
-      #   it "lets the diner rejoin once the party is completed" do
+      #   it "still counts as a duplicate while the party is ready" do
       #     ...
       #   end
       #
-      #   it "lets the diner rejoin after being marked a no-show" do
+      #   it "still counts as a duplicate while the party is seated" do
       #     ...
       #   end
       class NoLoopedExamples < Base

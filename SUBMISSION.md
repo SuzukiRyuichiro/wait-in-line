@@ -56,7 +56,6 @@ All settings are environment variables in `docker-compose.yml`. The defaults mat
 | Variable | Default | Meaning |
 |---|---|---|
 | `SERVICE_SECONDS_PER_PERSON` | `3` | Service time per diner in the party |
-| `NO_SHOW_GRACE_SECONDS` | `60` | How long a called party has to check in |
 | `TICK_INTERVAL_SECONDS` | `1` | How often the scheduler advances the queue |
 | `APP_HOST` | `localhost:3000` | Host used for links in emails |
 
@@ -68,6 +67,17 @@ All settings are environment variables in `docker-compose.yml`. The defaults mat
 - **No-duplicates and no-overbooking guarantees come from the database**, not from application checks. They use unique indexes and single-document conditional updates, which stay safe when requests arrive concurrently.
 - **Replica set in Docker** so multi-document transactions are available if needed.
 - **Dev-mode Docker image** with the source bind-mounted, since the requirement is a local `docker compose up`. A production image would precompile assets and run as a non-root user.
+
+## Scope decisions & known limitations
+
+### No check-in deadline
+
+When a party's table is ready, it keeps its seats until it checks in. There is no time limit and no "no-show" state.
+
+- **Why:** the spec doesn't define one. It says the next party's app shows a Check-in button when enough seats are free, and otherwise the queue waits. A deadline would add another timed transition, a race between "check in" and "expire", an extra screen and extra tests. I weighed that against the time available and the requirements actually given, and left it out.
+- **Drawback:** the queue is strict first-in, first-out. A ready party that never checks in (for example, they left) holds its seats, and everyone behind it waits indefinitely. A real restaurant wouldn't accept that.
+- **With more time:** a check-in window. A ready party that doesn't check in within N minutes becomes a no-show, its seats are released and the next party is called. Or a staff screen to skip a party. The seat accounting already separates *reserved* (ready + seated) from *occupied* (seated), so either would be one extra transition in the scheduler.
+- **Locally:** if a demo gets stuck behind an abandoned party, `docker compose down -v` resets the database.
 
 ## Troubleshooting
 

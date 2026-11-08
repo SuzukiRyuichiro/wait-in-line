@@ -71,14 +71,6 @@ RSpec.describe Party, type: :model do
 
       expect(party.active).to be false
     end
-
-    it "is not active when no_show" do
-      party.status = "no_show"
-      party.active = true
-      party.valid?
-
-      expect(party.active).to be false
-    end
   end
 
   describe "validations" do
@@ -132,7 +124,7 @@ RSpec.describe Party, type: :model do
       it "skips the uniqueness check for an inactive party" do
         create(:party, email: "ada@example.com")
         party.email = "ada@example.com"
-        party.status = "no_show"
+        party.status = "completed"
 
         expect(party).to be_valid
       end

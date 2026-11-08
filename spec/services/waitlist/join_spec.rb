@@ -168,16 +168,6 @@ RSpec.describe Waitlist::Join do
       expect(result.party.ticket_number).to eq(2)
     end
 
-    it "lets the diner join again after their old party was marked a no-show" do
-      existing.update!(status: "no_show")
-
-      result = join
-
-      expect(result).to be_joined
-      expect(result.party).not_to eq(existing)
-      expect(result.party.ticket_number).to eq(2)
-    end
-
     it "returns :invalid (not the old party) for bad input after the old party finished" do
       existing.update!(status: "completed")
 

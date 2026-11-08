@@ -2,7 +2,7 @@ class Party
   include Mongoid::Document
   include Mongoid::Timestamps
 
-  STATUSES        = %w[waiting ready seated completed no_show].freeze
+  STATUSES        = %w[waiting ready seated completed].freeze
   ACTIVE_STATUSES = %w[waiting ready seated].freeze
   SIZE_RANGE      = 1..Restaurant::CAPACITY
 
