@@ -11,4 +11,12 @@ Rails.application.routes.draw do
 
   root "parties#new"
   resources :parties, only: %i[create show], param: :token
+
+  # Test-only: wipes the database between Playwright tests. Only drawn on the
+  # isolated e2e stack (docker-compose `web-e2e` sets E2E_RESET=1).
+  if ENV["E2E_RESET"] == "1"
+    namespace :e2e do
+      resource :reset, only: :create
+    end
+  end
 end
