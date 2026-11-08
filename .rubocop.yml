@@ -6,3 +6,14 @@ inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 # # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
 # Layout/SpaceInsideArrayLiteralBrackets:
 #   Enabled: false
+
+# House cops (lib/rubocop/cop). Messages are written to be actionable by
+# coding agents: the PostToolUse hook feeds offenses back for self-correction.
+require:
+  - ./lib/rubocop/cop/spec_style/no_looped_examples
+
+SpecStyle/NoLoopedExamples:
+  Description: "Don't generate RSpec examples by looping over data."
+  Enabled: true
+  Include:
+    - "spec/**/*_spec.rb"

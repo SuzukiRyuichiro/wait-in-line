@@ -30,7 +30,7 @@ RSpec.describe Waitlist::Join do
     it "gives each new party the next ticket" do
       tickets = %w[a b c].map { |n| join(valid_params.merge(email: "#{n}@x.com")).party.ticket_number }
 
-      expect(tickets).to eq([1, 2, 3])
+      expect(tickets).to eq([ 1, 2, 3 ])
     end
 
     it "normalizes the email" do
@@ -45,6 +45,13 @@ RSpec.describe Waitlist::Join do
       expect(join(params).party.size).to eq(4)
     end
 
+    it "accepts the maximum party size of 10" do
+      result = join(valid_params.merge(size: 10))
+
+      expect(result).to be_joined
+      expect(result.party.reload.size).to eq(10)
+    end
+
     it "ignores fields the diner shouldn't set" do
       party = join(valid_params.merge(status: "seated", token: "chosen", ticket_number: 99)).party.reload
 
@@ -54,22 +61,58 @@ RSpec.describe Waitlist::Join do
   end
 
   describe "invalid input" do
-    {
-      "blank name"      => [{ name: "" },        :name],
-      "malformed email" => [{ email: "nope" },   :email],
-      "size 0"          => [{ size: 0 },         :size],
-      "size 11"         => [{ size: 11 },        :size],
-      "non-number size" => [{ size: "abc" },     :size],
-      "missing size"    => [{ size: nil },       :size]
-    }.each do |label, (overrides, field)|
-      it "returns :invalid for #{label} without saving or using a ticket" do
-        result = join(valid_params.merge(overrides))
+    it "rejects a blank name without saving or using a ticket" do
+      result = join(valid_params.merge(name: ""))
 
-        expect(result).to be_invalid
-        expect(result.party.errors[field]).to be_present
-        expect(Party.count).to eq(0)
-        expect(counter).to eq(0)
-      end
+      expect(result).to be_invalid
+      expect(result.party.errors[:name]).to be_present
+      expect(Party.count).to eq(0)
+      expect(counter).to eq(0)
+    end
+
+    it "rejects a malformed email without saving or using a ticket" do
+      result = join(valid_params.merge(email: "nope"))
+
+      expect(result).to be_invalid
+      expect(result.party.errors[:email]).to be_present
+      expect(Party.count).to eq(0)
+      expect(counter).to eq(0)
+    end
+
+    it "rejects a party size below the minimum without saving or using a ticket" do
+      result = join(valid_params.merge(size: 0))
+
+      expect(result).to be_invalid
+      expect(result.party.errors[:size]).to be_present
+      expect(Party.count).to eq(0)
+      expect(counter).to eq(0)
+    end
+
+    it "rejects a party size above the maximum without saving or using a ticket" do
+      result = join(valid_params.merge(size: 11))
+
+      expect(result).to be_invalid
+      expect(result.party.errors[:size]).to be_present
+      expect(Party.count).to eq(0)
+      expect(counter).to eq(0)
+    end
+
+    it "rejects a party size that isn't a number without saving or using a ticket" do
+      result = join(valid_params.merge(size: "abc"))
+
+      expect(result).to be_invalid
+      expect(result.party.errors[:size]).to be_present
+      expect(Party.count).to eq(0)
+      expect(counter).to eq(0)
+    end
+
+    it "rejects a missing party size without saving or using a ticket" do
+      result = join(valid_params.merge(size: nil))
+
+      expect(result).to be_invalid
+      expect(result.party.errors[:size]).to be_present
+      expect(Party.count).to eq(0)
+      expect(counter).to eq(0)
     end
 
     it "leaves no gap in ticket numbers after a failed attempt" do
@@ -103,24 +146,36 @@ RSpec.describe Waitlist::Join do
       expect(join(valid_params.merge(size: 0)).party).to eq(existing)
     end
 
-    %w[ready seated].each do |status|
-      it "still counts as a duplicate while the party is #{status}" do
-        existing.update!(status: status)
+    it "still counts as a duplicate once the party has been called" do
+      existing.update!(status: "ready")
 
-        expect(join).to be_duplicate
-      end
+      expect(join).to be_duplicate
     end
 
-    %w[completed no_show].each do |status|
-      it "lets the diner join again once the old party is #{status}" do
-        existing.update!(status: status)
+    it "still counts as a duplicate while the party is seated" do
+      existing.update!(status: "seated")
 
-        result = join
+      expect(join).to be_duplicate
+    end
 
-        expect(result).to be_joined
-        expect(result.party).not_to eq(existing)
-        expect(result.party.ticket_number).to eq(2)
-      end
+    it "lets the diner join again once their old party has finished dining" do
+      existing.update!(status: "completed")
+
+      result = join
+
+      expect(result).to be_joined
+      expect(result.party).not_to eq(existing)
+      expect(result.party.ticket_number).to eq(2)
+    end
+
+    it "lets the diner join again after their old party was marked a no-show" do
+      existing.update!(status: "no_show")
+
+      result = join
+
+      expect(result).to be_joined
+      expect(result.party).not_to eq(existing)
+      expect(result.party.ticket_number).to eq(2)
     end
 
     it "returns :invalid (not the old party) for bad input after the old party finished" do
