@@ -38,7 +38,6 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       APP_HOST: localhost:3000            # used for links in emails
-      NO_SHOW_GRACE_SECONDS: "60"
       SERVICE_SECONDS_PER_PERSON: "3"
     depends_on:
       mongo:
@@ -66,7 +65,7 @@ services:
     restart: unless-stopped
 
   # E2E gets its own app stack + database so test runs never touch dev data,
-  # and so it can use short timings (grace / service) without changing dev.
+  # and so it can use a short service time without changing dev.
   web-e2e:
     build: .
     profiles: ["e2e"]
@@ -78,7 +77,6 @@ services:
       RAILS_ENV: e2e                      # loads the reset middleware (config/environments/e2e.rb)
       MONGODB_URI: mongodb://mongo:27017/wait_in_line_e2e?replicaSet=rs0
       APP_HOST: web-e2e:3000
-      NO_SHOW_GRACE_SECONDS: "10"
       SERVICE_SECONDS_PER_PERSON: "1"
       TICK_INTERVAL_SECONDS: "0.5"
     depends_on:
