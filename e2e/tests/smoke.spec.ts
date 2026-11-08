@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, MAILPIT_URL } from "./support/fixtures";
 
 test("app is up", async ({ page, request }) => {
   const health = await request.get("/up");
@@ -9,7 +9,6 @@ test("app is up", async ({ page, request }) => {
 });
 
 test("mailpit is reachable", async ({ request }) => {
-  const mailpit = process.env.MAILPIT_URL ?? "http://localhost:8025";
-  const res = await request.get(`${mailpit}/api/v1/messages`);
+  const res = await request.get(`${MAILPIT_URL}/api/v1/messages`);
   expect(res.ok()).toBeTruthy();
 });

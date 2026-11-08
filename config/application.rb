@@ -26,7 +26,9 @@ module WaitInLine
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks])
+    # lib/rubocop holds custom cops loaded by RuboCop itself, not app code.
+    # lib/e2e is required explicitly by config/environments/e2e.rb only.
+    config.autoload_lib(ignore: %w[assets tasks rubocop e2e])
 
     # Configuration for the application, engines, and railties goes here.
     #
