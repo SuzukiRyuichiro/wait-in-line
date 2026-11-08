@@ -1,11 +1,10 @@
 #!/bin/bash -e
 
-# Remove a pid file left behind by an unclean shutdown
-# (PIDFILE lets web-e2e use its own file: both web containers share tmp/)
-rm -f "${PIDFILE:-tmp/pids/server.pid}"
-
 # Only the web server creates indexes, so the scheduler doesn't also run it
 if [ "$1" = "bin/rails" ] && [ "$2" = "server" ]; then
+  # Remove a pid file left behind by an unclean shutdown. Only the server does
+  # this: a scheduler sharing tmp/ would otherwise delete the live server's file.
+  rm -f tmp/pids/server.pid
   bin/rails db:mongoid:create_indexes
   bin/rails db:seed
 fi

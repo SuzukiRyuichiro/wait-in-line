@@ -8,8 +8,8 @@ export const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 export const test = base.extend<{ resetState: void }>({
   resetState: [
     async ({ request }, use) => {
-      const reset = await request.post("/e2e/reset");
-      expect(reset.status(), "POST /e2e/reset (is E2E_RESET=1 on the app?)").toBe(204);
+      const reset = await request.post("/__e2e__/reset");
+      expect(reset.status(), "POST /__e2e__/reset (is the app running with RAILS_ENV=e2e?)").toBe(204);
 
       const inbox = await request.delete(`${MAILPIT_URL}/api/v1/messages`);
       expect(inbox.ok()).toBeTruthy();

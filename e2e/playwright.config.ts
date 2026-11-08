@@ -4,14 +4,14 @@ export default defineConfig({
   testDir: "./tests",
   // The waitlist is ONE shared queue (one restaurant). Parallel tests would
   // see each other's parties, so run serially. Each test resets the e2e
-  // database first (tests/support/fixtures.ts → POST /e2e/reset).
+  // database first (tests/support/fixtures.ts → POST /__e2e__/reset).
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     // Host run → localhost. Container run → compose sets BASE_URL=http://web-e2e:3000
-    // (the isolated e2e stack, own DB). A host run needs an app with E2E_RESET=1.
+    // (the isolated e2e stack, own DB). A host run needs an app with RAILS_ENV=e2e.
     baseURL: process.env.BASE_URL ?? "http://localhost:3000",
     trace: "retain-on-failure",
   },

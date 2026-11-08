@@ -70,17 +70,17 @@ services:
   web-e2e:
     build: .
     profiles: ["e2e"]
-    volumes:
+    volumes: &e2e_volumes
       - .:/rails:z
+      - /rails/tmp                        # own tmp/: no pidfile/cache/restart.txt clash with dev web
     environment: &e2e_env
       <<: *app_env
+      RAILS_ENV: e2e                      # loads the reset middleware (config/environments/e2e.rb)
       MONGODB_URI: mongodb://mongo:27017/wait_in_line_e2e?replicaSet=rs0
       APP_HOST: web-e2e:3000
       NO_SHOW_GRACE_SECONDS: "10"
       SERVICE_SECONDS_PER_PERSON: "1"
       TICK_INTERVAL_SECONDS: "0.5"
-      E2E_RESET: "1"                      # draws POST /e2e/reset (see config/routes.rb)
-      PIDFILE: tmp/pids/server-e2e.pid    # same bind-mounted tmp/ as dev web
     depends_on:
       mongo:
         condition: service_healthy
@@ -97,8 +97,7 @@ services:
     build: .
     profiles: ["e2e"]
     command: ["bin/rails", "waitlist:tick_forever"]
-    volumes:
-      - .:/rails:z
+    volumes: *e2e_volumes
     environment: *e2e_env
     depends_on:
       web-e2e:
