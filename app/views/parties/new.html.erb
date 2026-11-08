@@ -3,7 +3,7 @@
 <div class="flex flex-col gap-5">
   <div class="flex flex-col gap-2 items-start">
     <span class="badge badge-warning badge-soft gap-1">
-      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <i data-lucide="clock" class="size-3.5" aria-hidden="true"></i>
       Fully booked right now
     </span>
     <h1 class="text-3xl font-bold">Join the waitlist</h1>
@@ -11,14 +11,14 @@
 
   <% if @party.errors.any? %>
     <div role="alert" class="alert alert-error alert-soft text-sm">
-      <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      <i data-lucide="triangle-alert" class="size-5 shrink-0" aria-hidden="true"></i>
       <span>Please fix <%= pluralize(@party.errors.attribute_names.size, "field") %> below.</span>
     </div>
   <% else %>
     <div class="stats bg-base-100 shadow-sm w-full">
       <div class="stat px-4 py-3">
         <div class="stat-figure text-base-content/40">
-          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <i data-lucide="users" class="size-6" aria-hidden="true"></i>
         </div>
         <div class="stat-title">In line</div>
         <div class="stat-value text-2xl"><%= pluralize(@waiting_count, "party") %></div>
@@ -31,7 +31,7 @@
       <fieldset class="fieldset p-0">
         <%= f.label :name, class: "fieldset-legend" %>
         <label class="input w-full <%= "input-error" if @party.errors[:name].any? %>">
-          <svg class="size-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+          <i data-lucide="user" class="size-4 opacity-50" aria-hidden="true"></i>
           <%= f.text_field :name, class: "grow", placeholder: "Aiko Tanaka", autocomplete: "name", required: true, maxlength: 100,
                 "aria-invalid": @party.errors[:name].any?.presence, "aria-describedby": ("name-err" if @party.errors[:name].any?) %>
         </label>
@@ -43,7 +43,7 @@
       <fieldset class="fieldset p-0">
         <%= f.label :email, class: "fieldset-legend" %>
         <label class="input w-full <%= "input-error" if @party.errors[:email].any? %>">
-          <svg class="size-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+          <i data-lucide="mail" class="size-4 opacity-50" aria-hidden="true"></i>
           <%= f.email_field :email, class: "grow", placeholder: "you@example.com", autocomplete: "email", required: true,
                 "aria-invalid": @party.errors[:email].any?.presence, "aria-describedby": ("email-err" if @party.errors[:email].any?) %>
         </label>
@@ -59,14 +59,14 @@
         <div class="join w-full">
           <button type="button" class="btn join-item btn-square" aria-label="Fewer guests"
                   onclick="this.parentElement.querySelector('input').stepDown()">
-            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+            <i data-lucide="minus" class="size-4" aria-hidden="true"></i>
           </button>
           <%= f.number_field :size, value: @party.size || 2, min: Party::SIZE_RANGE.min, max: Party::SIZE_RANGE.max, required: true,
                 class: "input join-item flex-1 text-center font-semibold #{"input-error" if @party.errors[:size].any?}",
                 "aria-invalid": @party.errors[:size].any?.presence, "aria-describedby": ("size-err" if @party.errors[:size].any?) %>
           <button type="button" class="btn join-item btn-square" aria-label="More guests"
                   onclick="this.parentElement.querySelector('input').stepUp()">
-            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <i data-lucide="plus" class="size-4" aria-hidden="true"></i>
           </button>
         </div>
         <% if @party.errors[:size].any? %>
@@ -78,7 +78,7 @@
 
       <%= f.button type: "submit", class: "btn btn-primary btn-lg btn-block mt-3" do %>
         Join waitlist
-        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        <i data-lucide="arrow-right" class="size-5" aria-hidden="true"></i>
       <% end %>
     </div>
   <% end %>
