@@ -46,7 +46,7 @@ The HTML report is written to `e2e/playwright-report/`.
 Unit and request specs (RSpec):
 
 ```bash
-docker compose run --rm web bundle exec rspec
+docker compose --profile test run --rm test
 ```
 
 ## Configuration

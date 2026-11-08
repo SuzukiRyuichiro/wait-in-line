@@ -2,8 +2,10 @@
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
-# Prevent database truncation if the environment is production
-abort("The Rails environment is running in production mode!") if Rails.env.production?
+# Specs truncate the database before each example, so refuse to run anywhere
+# but test. The Docker image defaults to development, so use the compose
+# `test` service: docker compose --profile test run --rm test
+abort("Specs must run with RAILS_ENV=test (got #{Rails.env})") unless Rails.env.test?
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
 

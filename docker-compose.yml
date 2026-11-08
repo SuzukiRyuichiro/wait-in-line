@@ -81,6 +81,18 @@ services:
         condition: service_healthy
     command: ["sh", "-c", "npm ci && npx playwright test"]
 
+  test:
+    build: .
+    profiles: ["test"]                    # not started by plain `docker compose up`
+    volumes:
+      - .:/rails:z
+    environment:
+      RAILS_ENV: test                     # the image defaults to development
+      MONGODB_TEST_URI: mongodb://mongo:27017/wait_in_line_test?replicaSet=rs0
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["bundle", "exec", "rspec"]
 
 volumes:
   mongo-data:
