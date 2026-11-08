@@ -67,6 +67,9 @@ RSpec.configure do |config|
   #   so specs must run against them)
   # - empty every collection before each example but KEEP the indexes.
   config.before(:suite) { Mongoid::Tasks::Database.create_indexes }
-  config.before(:each)  { Mongoid.truncate! }
-
+  config.before(:each)  do
+    Mongoid.truncate!
+    # Make that one restaurant in this app
+    Restaurant.create!(name: "Matsuya")
+  end
 end
