@@ -28,7 +28,13 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
   </head>
 
-  <body>
-    <%= yield %>
-  </body>
+  <body class="bg-base-200 text-base-content min-h-screen">
+    <header class="navbar bg-base-100 border-b border-base-300 px-4 min-h-14">
+      <div class="flex items-center gap-2 flex-1 mx-auto max-w-md">
+        <%= link_to "Wait in Line", root_path, class: "font-bold text-lg" %>
+      </div>
+    </header>
+    <main class="mx-auto w-full max-w-md px-5 py-6">
+      <%= yield %>
+    </main>
 </html>
