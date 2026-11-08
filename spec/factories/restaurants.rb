@@ -1,10 +1,9 @@
 FactoryBot.define do
   factory :restaurant do
-    name { "MyString" }
-    slug { "MyString" }
+    name { "Yoshinoya" }
     capacity { 1 }
     seats_reserved { 1 }
     seats_occupied { 1 }
-    next_ticket_number { 1 }
+    last_given_ticket_number { 0 }
   end
 end

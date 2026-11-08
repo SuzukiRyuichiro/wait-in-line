@@ -8,7 +8,7 @@ class Restaurant
   field :capacity, type: Integer, default: CAPACITY
   field :seats_reserved, type: Integer, default: 0
   field :seats_occupied, type: Integer, default: 0
-  field :next_ticket_number, type: Integer, default: 0
+  field :last_given_ticket_number, type: Integer, default: 0
 
   has_many :parties
 
@@ -21,7 +21,7 @@ class Restaurant
 
   def take_ticket!
     Restaurant.where(_id: id)
-              .find_one_and_update({ "$inc" => { next_ticket_number: 1 } }, return_document: :after)
-              .next_ticket_number
+              .find_one_and_update({ "$inc" => { last_given_ticket_number: 1 } }, return_document: :after)
+              .last_given_ticket_number
   end
 end
