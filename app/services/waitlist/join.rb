@@ -18,6 +18,7 @@ module Waitlist
 
     # Mongo's error code for "E11000 duplicate key" (a unique index rejected the insert)
     DUPLICATE_KEY = 11000
+    PERMITTED_FIELDS = %i[name email size].freeze
 
     # To reduce the extra of instantiating the service obj when .call
     def self.call(params, restaurant: Restaurant.current)
@@ -25,7 +26,9 @@ module Waitlist
     end
 
     def initialize(params, restaurant)
-      @params = params
+      # to_h raises on unpermitted ActionController::Parameters, so the
+      # controller still has to `permit` (Join just doesn't trust it alone).
+      @params = params.to_h.with_indifferent_access.slice(*PERMITTED_FIELDS)
       @restaurant = restaurant
     end
 
@@ -52,8 +55,6 @@ module Waitlist
     # Validations failed (blank name, bad email, email already on the list, ...).
     # The transaction rolled back, so the ticket number was NOT consumed.
     def handle_validation_failure(party)
-      # ticket_number is internal, not something the diner can fix in the form
-      party.errors.delete(:ticket_number)
       existing = find_active_party(party.email)
 
       if existing
