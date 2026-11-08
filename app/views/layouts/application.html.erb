@@ -24,6 +24,10 @@
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5.7.50" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.5"></script>
+    <%# Icons: views use <i data-lucide="name">, swapped for inline SVGs on load.
+        Pinned (never @latest). It ships every icon (~480KB), traded for clean views. %>
+    <script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js" defer></script>
+    <script>document.addEventListener("DOMContentLoaded", () => lucide.createIcons())</script>
     <!--TODO: perhaps remove this-->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
   </head>
