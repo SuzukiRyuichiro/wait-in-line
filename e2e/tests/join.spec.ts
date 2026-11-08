@@ -1,22 +1,21 @@
 import { test, expect, type Page } from "./support/fixtures";
+import { joinWaitlist, seatAheadOfUs } from "./support/diners";
 
 // Story H2: join the waitlist. Each test starts from an empty queue
 // (resetState in support/fixtures.ts). Server-side validation errors (422) are
 // covered by spec/requests/parties_spec.rb: the form's required/min/max
 // attributes stop that input in the browser before it reaches the server.
-
-async function joinWaitlist(page: Page, diner: { name: string; email: string }) {
-  await page.goto("/");
-  await page.getByLabel("Name").fill(diner.name);
-  await page.getByLabel("Email").fill(diner.email);
-  await page.getByRole("button", { name: "Join waitlist" }).click();
-}
+//
+// A diner who joins while seats are free is ready at once (H10, see
+// table_ready.spec.ts), so to see anyone "in line" a party of 10 takes every
+// seat first.
 
 function placeInLine(page: Page) {
   return page.locator("section").filter({ hasText: "Your place in line" });
 }
 
-test("a diner joins an empty line and is next", async ({ page }) => {
+test("a diner who joins a full restaurant is next in line", async ({ page, browser }) => {
+  const bigGroup = await seatAheadOfUs(browser);
   await page.goto("/");
   await expect(page.getByText("0 parties")).toBeVisible();
 
@@ -30,9 +29,11 @@ test("a diner joins an empty line and is next", async ({ page }) => {
   await expect(page.getByText("Party of 3")).toBeVisible();
   await expect(placeInLine(page)).toContainText("1st");
   await expect(placeInLine(page)).toContainText("You're next");
+  await bigGroup.context.close();
 });
 
 test("the next diner sees the line and how many parties are ahead", async ({ page, browser }) => {
+  const bigGroup = await seatAheadOfUs(browser);
   await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com" });
 
   const otherBrowser = await browser.newContext();
@@ -46,9 +47,11 @@ test("the next diner sees the line and how many parties are ahead", async ({ pag
   await expect(placeInLine(ben)).toContainText("2nd");
   await expect(placeInLine(ben)).toContainText("1 party ahead of you");
   await otherBrowser.close();
+  await bigGroup.context.close();
 });
 
-test("coming back to the join page takes the diner to their party", async ({ page }) => {
+test("coming back to the join page takes the diner to their party", async ({ page, browser }) => {
+  const bigGroup = await seatAheadOfUs(browser);
   await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com" });
   const partyUrl = page.url();
 
@@ -56,9 +59,11 @@ test("coming back to the join page takes the diner to their party", async ({ pag
 
   await expect(page).toHaveURL(partyUrl);
   await expect(page.getByRole("heading", { name: "Hi Aiko, you're in line" })).toBeVisible();
+  await bigGroup.context.close();
 });
 
 test("the party link works in another browser, which then remembers the party", async ({ page, browser }) => {
+  const bigGroup = await seatAheadOfUs(browser);
   await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com" });
   const partyUrl = page.url();
 
@@ -70,9 +75,11 @@ test("the party link works in another browser, which then remembers the party", 
   await phonePage.goto("/");
   await expect(phonePage).toHaveURL(partyUrl);
   await phone.close();
+  await bigGroup.context.close();
 });
 
 test("joining again with the same email goes to the existing party", async ({ page, browser }) => {
+  const bigGroup = await seatAheadOfUs(browser);
   await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com" });
   const partyUrl = page.url();
 
@@ -84,4 +91,5 @@ test("joining again with the same email goes to the existing party", async ({ pa
   await expect(again.getByText("You're already on the list.")).toBeVisible();
   await expect(placeInLine(again)).toContainText("1st");
   await otherBrowser.close();
+  await bigGroup.context.close();
 });

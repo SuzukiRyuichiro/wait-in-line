@@ -15,6 +15,7 @@ class Party
   field :size, type: Integer
   field :status, type: String, default: "waiting"
   field :active, type: Mongoid::Boolean, default: true
+  field :ready_at, type: Time # set by Waitlist::Settle when the party's seats are reserved
 
   # obviously token cannot be the same
   index({ token: 1 }, { unique: true })
@@ -44,6 +45,9 @@ class Party
     # party_path(party) => /parties/<token> Override the def bahavior of using id
     token
   end
+
+  def waiting? = status == "waiting"
+  def ready?   = status == "ready"
 
   # Memoized so the view can call it (and #position) freely without re-querying.
   def parties_ahead

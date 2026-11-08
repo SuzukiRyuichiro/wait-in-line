@@ -1,4 +1,4 @@
-<% content_for :title, "Your place in line" %>
+<% content_for :title, @party.ready? ? "Your table is ready" : "Your place in line" %>
 
 <div class="flex flex-col gap-4">
   <% if notice.present? %>
@@ -8,28 +8,37 @@
     </div>
   <% end %>
 
-  <div class="flex items-center justify-between gap-2">
-    <h1 class="text-xl font-bold">Hi <%= @party.name.split.first %>, you're in line</h1>
-    <span class="badge badge-neutral badge-soft gap-1 shrink-0">
-      <i data-lucide="users" class="size-3.5" aria-hidden="true"></i>
-      Party of <%= @party.size %>
-    </span>
-  </div>
-
-  <section class="card bg-base-100 shadow-sm">
-    <div class="card-body items-center text-center gap-3 p-6">
-      <p class="text-sm font-medium text-base-content/60">Your place in line</p>
-      <p class="text-7xl font-black leading-none"><%= @party.position %><span class="text-3xl align-top"><%= @party.position.ordinal %></span></p>
-      <p class="text-base-content/70">
-        <%= @party.parties_ahead.zero? ? "You're next" : "#{pluralize(@party.parties_ahead, "party", plural: "parties")} ahead of you" %>
-      </p>
+  <% if @party.ready? %>
+    <section class="card bg-success/10 border border-success/30">
+      <div class="card-body items-center text-center gap-2 p-6">
+        <h1 class="text-2xl font-bold">Your table is ready, <%= @party.name.split.first %>!</h1>
+        <p>Party of <%= @party.size %>. Your seats are being held for you.</p>
+      </div>
+    </section>
+  <% else %>
+    <div class="flex items-center justify-between gap-2">
+      <h1 class="text-xl font-bold">Hi <%= @party.name.split.first %>, you're in line</h1>
+      <span class="badge badge-neutral badge-soft gap-1 shrink-0">
+        <i data-lucide="users" class="size-3.5" aria-hidden="true"></i>
+        Party of <%= @party.size %>
+      </span>
     </div>
-  </section>
 
-  <div role="status" class="alert alert-info alert-soft text-sm">
-    <i data-lucide="mail" class="size-5 shrink-0" aria-hidden="true"></i>
-    <span>We'll email you when it's your turn. Feel free to close this page.</span>
-  </div>
+    <section class="card bg-base-100 shadow-sm">
+      <div class="card-body items-center text-center gap-3 p-6">
+        <p class="text-sm font-medium text-base-content/60">Your place in line</p>
+        <p class="text-7xl font-black leading-none"><%= @party.position %><span class="text-3xl align-top"><%= @party.position.ordinal %></span></p>
+        <p class="text-base-content/70">
+          <%= @party.parties_ahead.zero? ? "You're next" : "#{pluralize(@party.parties_ahead, "party", plural: "parties")} ahead of you" %>
+        </p>
+      </div>
+    </section>
+
+    <div role="status" class="alert alert-info alert-soft text-sm">
+      <i data-lucide="mail" class="size-5 shrink-0" aria-hidden="true"></i>
+      <span>We'll email you when it's your turn. Feel free to close this page.</span>
+    </div>
+  <% end %>
 
   <p class="text-center text-xs text-base-content/60">
     Updated just now · <%= link_to "Refresh", party_path(@party), class: "link" %>
