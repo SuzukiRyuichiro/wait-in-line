@@ -1,11 +1,11 @@
 FactoryBot.define do
   factory :party do
-    token { "MyString" }
-    ticket_number { 1 }
+    # rails_helper seeds the single restaurant before every example
+    restaurant { Restaurant.current }
+    sequence(:ticket_number)
     name { "Scooter" }
-    email { "mail@mail.com" }
-    size { 1 }
-    status { "active" }
-    active { true }
+    sequence(:email) { |n| "guest#{n}@example.com" }
+    size { 2 }
+    status { "waiting" }
   end
 end
