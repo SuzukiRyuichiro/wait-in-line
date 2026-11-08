@@ -45,8 +45,13 @@ class Party
     token
   end
 
+  # Memoized so the view can call it (and #position) freely without re-querying.
   def parties_ahead
-    Party.where(restaurant_id: restaurant_id, status: "waiting", :ticket_number.lt => ticket_number).count
+    @parties_ahead ||= Party.where(restaurant_id: restaurant_id, status: "waiting", :ticket_number.lt => ticket_number).count
+  end
+
+  def position
+    parties_ahead + 1
   end
 
   private

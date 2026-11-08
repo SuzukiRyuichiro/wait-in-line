@@ -1,5 +1,4 @@
 <% content_for :title, "Join the waitlist" %>
-<% size_range = Party::SIZE_RANGE %>
 
 <div class="flex flex-col gap-5">
   <div class="flex flex-col gap-2 items-start">
@@ -62,7 +61,7 @@
                   onclick="this.parentElement.querySelector('input').stepDown()">
             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
           </button>
-          <%= f.number_field :size, value: @party.size || 2, min: size_range.min, max: size_range.max, required: true,
+          <%= f.number_field :size, value: @party.size || 2, min: Party::SIZE_RANGE.min, max: Party::SIZE_RANGE.max, required: true,
                 class: "input join-item flex-1 text-center font-semibold #{"input-error" if @party.errors[:size].any?}",
                 "aria-invalid": @party.errors[:size].any?.presence, "aria-describedby": ("size-err" if @party.errors[:size].any?) %>
           <button type="button" class="btn join-item btn-square" aria-label="More guests"
@@ -73,7 +72,7 @@
         <% if @party.errors[:size].any? %>
           <p id="size-err" class="label text-error whitespace-normal"><%= @party.errors.full_messages_for(:size).first %></p>
         <% else %>
-          <p class="label"><%= size_range.min %>–<%= size_range.max %> guests</p>
+          <p class="label"><%= Party::SIZE_RANGE.min %>–<%= Party::SIZE_RANGE.max %> guests</p>
         <% end %>
       </fieldset>
 
