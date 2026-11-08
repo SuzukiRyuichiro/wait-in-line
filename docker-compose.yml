@@ -20,7 +20,6 @@ services:
       retries: 20
       start_period: 10s
 
-
   mailpit:
       image: axllent/mailpit:v1.33
       ports:
