@@ -19,6 +19,7 @@ class Party
   field :notified_at, type: Time # outbox: nil while ready = "table ready" email not sent yet
   field :seated_at, type: Time       # set by Waitlist::CheckIn
   field :service_ends_at, type: Time # seated_at + size × service time per person
+  field :completed_at, type: Time    # set by Waitlist::Settle when service ends
 
   # obviously token cannot be the same
   index({ token: 1 }, { unique: true })
@@ -30,6 +31,8 @@ class Party
   index({ restaurant_id: 1, status: 1, ticket_number: 1 })
   # Waitlist::NotifyReady: ready parties still waiting for their email
   index({ status: 1, notified_at: 1 })
+  # Waitlist::Settle: seated parties whose service has ended
+  index({ status: 1, service_ends_at: 1 })
 
   before_validation :normalize_email
   before_validation :sync_active
@@ -53,7 +56,8 @@ class Party
 
   def waiting? = status == "waiting"
   def ready?   = status == "ready"
-  def seated?  = status == "seated"
+  def seated?    = status == "seated"
+  def completed? = status == "completed"
 
   # Memoized so the view can call it (and #position) freely without re-querying.
   def parties_ahead
