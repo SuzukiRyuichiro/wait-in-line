@@ -19,8 +19,16 @@ namespace :waitlist do
        # sleep stays outside wrap on purpose: the reloader holds a lock while
        # active, and sleeping inside it could block reloading in other threads.
        Rails.application.reloader.wrap do
-         # TODO: Waitlist::Settle.call
+         Waitlist::Settle.call
        end
+     rescue StandardError => e
+       # One bad tick (a DB blip, the E2E reset running between truncate and
+       # seed) must not kill the loop: log it and try again next tick. Nothing
+       # is lost, because the state lives in the DB.
+       Rails.logger.error("[ticker] #{e.class}: #{e.message}")
+       puts "[ticker] #{e.class}: #{e.message}"
+     ensure
+       # Also sleeps after a failed tick, so a persistent error doesn't spin.
        sleep interval
      end
    end
