@@ -68,6 +68,13 @@ class Party
     parties_ahead + 1
   end
 
+  # What the live-status island watches. The page renders it into data
+  # attributes and the status endpoint returns it as JSON, so the two always
+  # agree; the island reloads the page when they differ (H3).
+  def live_state
+    { status: status, position: (position if waiting?) }
+  end
+
   private
 
   def normalize_email

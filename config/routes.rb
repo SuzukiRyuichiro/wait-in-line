@@ -14,6 +14,8 @@ Rails.application.routes.draw do
     scope module: :parties do
       # A party has one check-in: POST /parties/:party_token/check_in
       resource :check_in, only: :create
+      # Polled by the live-status island: GET /parties/:party_token/status.json
+      resource :status, only: :show
     end
   end
 end
