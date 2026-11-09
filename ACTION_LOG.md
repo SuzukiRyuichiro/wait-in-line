@@ -13,3 +13,9 @@ After the design looks ok to me, and helped me to understand the flow of the app
 ### Nov 7
 
 I've planned the routes, setups, potential ways to deploy, I've made a tiny grey area decision on using the DaisyUI CDN just to utilize the components. It is no JS framework so I thought it'd be alright.
+
+## Nov 8th
+
+After some thinking, went ahead and making the models. Prioritized the happy path implementation. Making the service objects to join and settle the queue state, etc.
+
+## Nov 9th
