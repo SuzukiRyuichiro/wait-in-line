@@ -26,7 +26,8 @@
         <i data-lucide="utensils" class="size-8 text-primary" aria-hidden="true"></i>
         <h1 class="text-2xl font-bold">Enjoy your meal, <%= @party.name.split.first %>!</h1>
         <p>Party of <%= @party.size %>. Your service ends
-          <time datetime="<%= @party.service_ends_at.iso8601 %>" class="font-semibold">in <%= pluralize([ (@party.service_ends_at - Time.current).ceil, 0 ].max, "second") %></time>.</p>
+          <time datetime="<%= @party.service_ends_at.iso8601(3) %>" data-island="countdown"
+                data-server-now="<%= Time.current.iso8601(3) %>" class="font-semibold">in <%= pluralize([ (@party.service_ends_at - Time.current).ceil, 0 ].max, "second") %></time>.</p>
       </div>
     </section>
   <% elsif @party.ready? %>
@@ -65,8 +66,14 @@
   <% end %>
 
   <% unless @party.completed? %>
-    <p class="text-center text-xs text-base-content/60">
+    <%# Waiting and seated pages change on their own, so they poll. A ready page
+        only changes when the diner taps Check in. %>
+    <% live = @party.waiting? || @party.seated? %>
+    <%= tag.p class: "text-center text-xs text-base-content/60",
+              data: (live ? { island: "live-status", status_url: party_status_path(@party, format: :json),
+                              **@party.live_state } : {}) do %>
       Updated just now · <%= link_to "Refresh", party_path(@party), class: "link" %>
-    </p>
+      <span data-reconnecting hidden aria-live="polite" class="text-warning">· Reconnecting…</span>
+    <% end %>
   <% end %>
 </div>
