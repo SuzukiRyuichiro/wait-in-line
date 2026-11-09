@@ -17,10 +17,33 @@ module Waitlist
     end
 
     def call
+      complete_finished_services # free seats first, so the next step can use them
       ready_parties
     end
 
     private
+
+    # seated → completed once the service time is up (H7), releasing the seats.
+    def complete_finished_services
+      finished = Party.where(restaurant_id: @restaurant.id, status: "seated", :service_ends_at.lte => @now)
+
+      finished.each do |party|
+        Mongoid.transaction do
+          # Re-check inside the transaction: another run may have completed it
+          # already, and its seats must only be released once.
+          # `active: false` by hand: a raw update skips the model's callbacks,
+          # and the unique email index only lets the diner rejoin once inactive.
+          completed = Party.where(_id: party.id, status: "seated").find_one_and_update(
+            { "$set" => { status: "completed", active: false, completed_at: @now } }
+          )
+          next unless completed
+
+          Restaurant.where(_id: @restaurant.id).find_one_and_update(
+            { "$inc" => { seats_reserved: -completed.size, seats_occupied: -completed.size } }
+          )
+        end
+      end
+    end
 
     # Strict FIFO (A7): ready the head of the queue while its seats fit.
     # One tick can ready several parties (e.g. three parties of 3 into an empty

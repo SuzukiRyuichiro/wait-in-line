@@ -14,6 +14,18 @@ RSpec.describe Waitlist::Settle do
     restaurant.reload.seats_reserved
   end
 
+  def per_person
+    Rails.configuration.x.waitlist.service_seconds_per_person
+  end
+
+  # Ready the party, then check it in at `now`: its service ends at
+  # now + size × per_person.
+  def seat(party)
+    settle
+    Waitlist::CheckIn.call(party.reload, now: now)
+    party.reload
+  end
+
   describe "readying the queue" do
     it "readies the head of the queue and reserves its seats" do
       party = create(:party, size: 4)
@@ -74,6 +86,48 @@ RSpec.describe Waitlist::Settle do
     end
   end
 
+  describe "finishing service" do
+    it "keeps a seated party seated until its service time is up" do
+      party = seat(create(:party, size: 4))
+
+      settle(at: party.service_ends_at - 1.second)
+
+      expect(party.reload).to be_seated
+      expect(restaurant.reload).to have_attributes(seats_reserved: 4, seats_occupied: 4)
+    end
+
+    it "completes the party when its service ends and releases its seats" do
+      party = seat(create(:party, size: 4))
+
+      settle(at: now + 4 * per_person)
+
+      expect(party.reload).to have_attributes(status: "completed", active: false,
+                                              completed_at: now + 4 * per_person)
+      expect(restaurant.reload).to have_attributes(seats_reserved: 0, seats_occupied: 0)
+    end
+
+    it "readies the next party with the freed seats in the same run" do
+      seated = seat(create(:party, ticket_number: 1, size: 9))
+      next_party = create(:party, ticket_number: 2, size: 2)
+      settle
+      expect(next_party.reload).to be_waiting
+
+      settle(at: seated.service_ends_at)
+
+      expect(next_party.reload).to be_ready
+      expect(seats_reserved).to eq(2)
+    end
+
+    it "lets the diner join again with the same email once they're done" do
+      seat(create(:party, email: "ada@example.com", size: 2))
+      settle(at: now + 2 * per_person)
+
+      result = Waitlist::Join.call({ name: "Ada", email: "ada@example.com", size: 2 })
+
+      expect(result).to be_joined
+    end
+  end
+
   describe "running concurrently" do
     # The ticker and a join request can settle at the same moment (and in
     # production, two schedulers during a deploy). Seats must never be over-reserved.
@@ -96,6 +150,15 @@ RSpec.describe Waitlist::Settle do
 
       expect(parties.map { |p| p.reload.status }).to eq(%w[ready ready ready waiting waiting waiting])
       expect(seats_reserved).to eq(9)
+    end
+
+    it "completes a party and releases its seats exactly once" do
+      party = seat(create(:party, size: 4))
+
+      Array.new(5) { Thread.new { described_class.call(restaurant: Restaurant.find(restaurant.id), now: party.service_ends_at) } }.each(&:join)
+
+      expect(party.reload).to be_completed
+      expect(restaurant.reload).to have_attributes(seats_reserved: 0, seats_occupied: 0)
     end
   end
 end

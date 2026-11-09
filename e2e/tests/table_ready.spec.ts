@@ -15,10 +15,13 @@ test("a diner who joins an empty restaurant gets a table right away", async ({ p
 });
 
 test("the diner gets a table-ready email whose link opens their party anywhere", async ({ page, browser }) => {
-  await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com", size: 3 });
+  // An address no other test uses: the reset clears the inbox, but a tick that
+  // was already running can still deliver an earlier test's email afterwards.
+  const address = `aiko+${Date.now()}@example.com`;
+  await joinWaitlist(page, { name: "Aiko Tanaka", email: address, size: 3 });
   await expect(page.getByRole("heading", { name: "Your table is ready, Aiko!" })).toBeVisible();
 
-  const email = await latestEmailTo(page.request, "aiko@example.com");
+  const email = await latestEmailTo(page.request, address);
   expect(email.Subject).toBe("Your table is ready, Aiko");
   expect(email.Text).toContain("Your table for 3 is ready");
 

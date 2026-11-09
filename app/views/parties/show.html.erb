@@ -1,4 +1,5 @@
-<% content_for :title, if @party.seated? then "Enjoy your meal"
+<% content_for :title, if @party.completed? then "Thanks for dining"
+                     elsif @party.seated? then "Enjoy your meal"
                      elsif @party.ready? then "Your table is ready"
                      else "Your place in line" end %>
 
@@ -10,7 +11,16 @@
     </div>
   <% end %>
 
-  <% if @party.seated? %>
+  <% if @party.completed? %>
+    <section class="card bg-base-100 shadow-sm">
+      <div class="card-body items-center text-center gap-3 p-6">
+        <i data-lucide="heart" class="size-8 text-primary" aria-hidden="true"></i>
+        <h1 class="text-2xl font-bold">Thanks for dining, <%= @party.name.split.first %>!</h1>
+        <p class="text-base-content/70">We hope to see you again soon.</p>
+        <%= link_to "Join the waitlist again", root_path, class: "btn btn-outline w-full" %>
+      </div>
+    </section>
+  <% elsif @party.seated? %>
     <section class="card bg-base-100 shadow-sm">
       <div class="card-body items-center text-center gap-2 p-6">
         <i data-lucide="utensils" class="size-8 text-primary" aria-hidden="true"></i>
@@ -54,7 +64,9 @@
     </div>
   <% end %>
 
-  <p class="text-center text-xs text-base-content/60">
-    Updated just now · <%= link_to "Refresh", party_path(@party), class: "link" %>
-  </p>
+  <% unless @party.completed? %>
+    <p class="text-center text-xs text-base-content/60">
+      Updated just now · <%= link_to "Refresh", party_path(@party), class: "link" %>
+    </p>
+  <% end %>
 </div>
