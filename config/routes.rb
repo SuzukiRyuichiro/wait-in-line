@@ -10,5 +10,10 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   root "parties#new"
-  resources :parties, only: %i[create show], param: :token
+  resources :parties, only: %i[create show], param: :token do
+    scope module: :parties do
+      # A party has one check-in: POST /parties/:party_token/check_in
+      resource :check_in, only: :create
+    end
+  end
 end

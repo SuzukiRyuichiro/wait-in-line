@@ -30,6 +30,11 @@ module WaitInLine
     # lib/e2e is required explicitly by config/environments/e2e.rb only.
     config.autoload_lib(ignore: %w[assets tasks rubocop e2e])
 
+    # Service time per diner (spec: 3 seconds). Read once at boot, so each
+    # process (web, scheduler, e2e stack) can run with its own value.
+    # Integer() raises on garbage like "3s" instead of silently giving 0.
+    config.x.waitlist.service_seconds_per_person = Integer(ENV.fetch("SERVICE_SECONDS_PER_PERSON", "3")).seconds
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
