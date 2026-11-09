@@ -1,4 +1,4 @@
 class ApplicationMailer < ActionMailer::Base
-  default from: "from@example.com"
+  default from: "Wait in Line <no-reply@wait-in-line.test>"
   layout "mailer"
 end

@@ -1,0 +1,3 @@
+<p>Hi <%= @party.name.split.first %>,</p>
+<p>Your table for <%= @party.size %> is ready. We're holding your seats.</p>
+<p><%= link_to "See your table and check in", party_url(@party) %></p>

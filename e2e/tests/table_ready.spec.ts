@@ -1,9 +1,10 @@
 import { test, expect } from "./support/fixtures";
 import { joinWaitlist, seatAheadOfUs } from "./support/diners";
+import { latestEmailTo } from "./support/mailpit";
 
-// Story H4 (ready screen) and H10 (seated right away when seats are free),
-// with strict first-in, first-out order (A7). The table-ready email is a
-// separate story; the Check in button comes with H5.
+// Story H4 (ready screen + "table ready" email) and H10 (ready right away when
+// seats are free), with strict first-in, first-out order (A7). The Check in
+// button comes with H5.
 
 test("a diner who joins an empty restaurant gets a table right away", async ({ page }) => {
   await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com", size: 3 });
@@ -13,13 +14,21 @@ test("a diner who joins an empty restaurant gets a table right away", async ({ p
   await expect(page).toHaveTitle(/Your table is ready/);
 });
 
-test("the table stays ready when the diner opens their link in another browser", async ({ page, browser }) => {
-  await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com" });
+test("the diner gets a table-ready email whose link opens their party anywhere", async ({ page, browser }) => {
+  await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com", size: 3 });
   await expect(page.getByRole("heading", { name: "Your table is ready, Aiko!" })).toBeVisible();
+
+  const email = await latestEmailTo(page.request, "aiko@example.com");
+  expect(email.Subject).toBe("Your table is ready, Aiko");
+  expect(email.Text).toContain("Your table for 3 is ready");
+
+  // APP_HOST=web-e2e:3000 on the e2e stack, so the link points where Playwright browses.
+  const link = email.Text.match(/https?:\/\/\S+\/parties\/[\w-]+/)?.[0];
+  expect(link).toBe(page.url());
 
   const phone = await browser.newContext();
   const phonePage = await phone.newPage();
-  await phonePage.goto(page.url());
+  await phonePage.goto(link!);
   await expect(phonePage.getByRole("heading", { name: "Your table is ready, Aiko!" })).toBeVisible();
   await phone.close();
 });
