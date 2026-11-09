@@ -17,6 +17,8 @@ class Party
   field :active, type: Mongoid::Boolean, default: true
   field :ready_at, type: Time # set by Waitlist::Settle when the party's seats are reserved
   field :notified_at, type: Time # outbox: nil while ready = "table ready" email not sent yet
+  field :seated_at, type: Time       # set by Waitlist::CheckIn
+  field :service_ends_at, type: Time # seated_at + size × service time per person
 
   # obviously token cannot be the same
   index({ token: 1 }, { unique: true })
@@ -51,6 +53,7 @@ class Party
 
   def waiting? = status == "waiting"
   def ready?   = status == "ready"
+  def seated?  = status == "seated"
 
   # Memoized so the view can call it (and #position) freely without re-querying.
   def parties_ahead

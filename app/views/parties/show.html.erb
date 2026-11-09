@@ -1,4 +1,6 @@
-<% content_for :title, @party.ready? ? "Your table is ready" : "Your place in line" %>
+<% content_for :title, if @party.seated? then "Enjoy your meal"
+                     elsif @party.ready? then "Your table is ready"
+                     else "Your place in line" end %>
 
 <div class="flex flex-col gap-4">
   <% if notice.present? %>
@@ -8,11 +10,23 @@
     </div>
   <% end %>
 
-  <% if @party.ready? %>
-    <section class="card bg-success/10 border border-success/30">
+  <% if @party.seated? %>
+    <section class="card bg-base-100 shadow-sm">
       <div class="card-body items-center text-center gap-2 p-6">
+        <i data-lucide="utensils" class="size-8 text-primary" aria-hidden="true"></i>
+        <h1 class="text-2xl font-bold">Enjoy your meal, <%= @party.name.split.first %>!</h1>
+        <p>Party of <%= @party.size %>. Your service ends
+          <time datetime="<%= @party.service_ends_at.iso8601 %>" class="font-semibold">in <%= pluralize([ (@party.service_ends_at - Time.current).ceil, 0 ].max, "second") %></time>.</p>
+      </div>
+    </section>
+  <% elsif @party.ready? %>
+    <section class="card bg-success/10 border border-success/30">
+      <div class="card-body items-center text-center gap-3 p-6">
         <h1 class="text-2xl font-bold">Your table is ready, <%= @party.name.split.first %>!</h1>
         <p>Party of <%= @party.size %>. Your seats are being held for you.</p>
+        <%= button_to party_check_in_path(@party), class: "btn btn-primary btn-lg w-full", form_class: "w-full" do %>
+          <i data-lucide="log-in" class="size-5" aria-hidden="true"></i> Check in
+        <% end %>
       </div>
     </section>
   <% else %>
