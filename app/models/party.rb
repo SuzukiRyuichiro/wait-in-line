@@ -16,6 +16,7 @@ class Party
   field :status, type: String, default: "waiting"
   field :active, type: Mongoid::Boolean, default: true
   field :ready_at, type: Time # set by Waitlist::Settle when the party's seats are reserved
+  field :notified_at, type: Time # outbox: nil while ready = "table ready" email not sent yet
 
   # obviously token cannot be the same
   index({ token: 1 }, { unique: true })
@@ -25,6 +26,8 @@ class Party
   index({ restaurant_id: 1, ticket_number: 1 }, { unique: true })
   # No same ticket number with the same status?
   index({ restaurant_id: 1, status: 1, ticket_number: 1 })
+  # Waitlist::NotifyReady: ready parties still waiting for their email
+  index({ status: 1, notified_at: 1 })
 
   before_validation :normalize_email
   before_validation :sync_active

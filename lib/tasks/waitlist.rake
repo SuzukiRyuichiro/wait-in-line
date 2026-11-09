@@ -20,6 +20,7 @@ namespace :waitlist do
        # active, and sleeping inside it could block reloading in other threads.
        Rails.application.reloader.wrap do
          Waitlist::Settle.call
+         Waitlist::NotifyReady.call # only here, never from a request (see the class)
        end
      rescue StandardError => e
        # One bad tick (a DB blip, the E2E reset running between truncate and
