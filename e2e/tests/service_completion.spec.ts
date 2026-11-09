@@ -32,7 +32,7 @@ test("a diner who has finished can join the waitlist again with the same email",
   await page.getByRole("button", { name: "Check in" }).click();
   await expect(page.getByRole("heading", { name: "Thanks for dining, Aiko!" })).toBeVisible({ timeout: 15_000 });
 
-  await page.getByRole("link", { name: "Join the waitlist again" }).click();
+  await page.getByRole("link", { name: "Back to home" }).click();
   await joinWaitlist(page, { name: "Aiko Tanaka", email: "aiko@example.com", size: 2 });
 
   await expect(page.getByRole("heading", { name: "Your table is ready, Aiko!" })).toBeVisible();
