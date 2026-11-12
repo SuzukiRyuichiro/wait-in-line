@@ -31,11 +31,11 @@ To stop, press `Ctrl+C`, then `docker compose down`. To also wipe the database, 
 | `scheduler` | Same image, runs `bin/rails waitlist:tick_forever`, a loop that advances the queue |
 | `mongo` | MongoDB 9 as a single-node replica set. The healthcheck initiates the replica set, so there is no manual step |
 | `mailpit` | Local SMTP server with a web inbox, so you can read the emails without a real mail provider |
-| `e2e` | Playwright tests. Only runs with `--profile e2e` (see below) |
+| `e2e`, `web-e2e`, `scheduler-e2e` | Playwright tests and their own copy of the app, on a separate database with faster timings. Only start with `--profile e2e` (see below) |
 
 ## Running the tests
 
-End-to-end tests (Playwright) run in a container against the running stack:
+End-to-end tests (Playwright) run in a container against their own copy of the app (`web-e2e` + `scheduler-e2e`, database `wait_in_line_e2e`), so they never touch the data you click around with. Service time there is 1 second per person to keep the tests fast, and every test starts from an empty queue:
 
 ```bash
 docker compose --profile e2e run --rm e2e
@@ -59,25 +59,71 @@ All settings are environment variables in `docker-compose.yml`. The defaults mat
 | `TICK_INTERVAL_SECONDS` | `1` | How often the scheduler advances the queue |
 | `APP_HOST` | `localhost:3000` | Host used for links in emails |
 
-## Architecture
+## How it works
 
-- **Rails 8 + Mongoid** on MongoDB. The spec requires Mongo, so the app uses Mongoid, the official ODM, instead of ActiveRecord.
-- **Server-side rendering with vanilla JS islands.** ERB renders every page. Small, dependency-free scripts, loaded through an importmap with no build step, update only the live parts, such as "is it my turn?". It is not an SPA.
-- **Live updates by polling** a small JSON endpoint. It needs no extra infrastructure such as Redis.
-- **No-duplicates and no-overbooking guarantees come from the database**, not from application checks. They use unique indexes and single-document conditional updates, which stay safe when requests arrive concurrently.
-- **Replica set in Docker** so multi-document transactions are available if needed.
-- **Dev-mode Docker image** with the source bind-mounted, since the requirement is a local `docker compose up`. A production image would precompile assets and run as a non-root user.
+### A party's life
+
+```
+waiting ──(seats free, first in line)──▶ ready ──(diner taps Check in)──▶ seated ──(size × 3s later)──▶ completed
+          scheduler                               web request                       scheduler
+```
+
+Two kinds of actors move a party along, and MongoDB is the only shared state:
+
+- **Web requests do what a diner does:** join, check in.
+- **The scheduler does what the clock does:** finish service, then call the next party. It's a separate container running a loop that calls `Waitlist::Settle` and `Waitlist::NotifyReady` every second.
+
+The `restaurants` document holds two seat counters:
+
+- **`seats_reserved`** (ready + seated) decides whether the next party fits, so seats held for a party that hasn't checked in yet are never handed out twice.
+- **`seats_occupied`** (seated only) is the spec's "seats available, decreased by the party size at check-in".
+
+### Joining (`Waitlist::Join`)
+
+1. In one transaction: take the next ticket number (an atomic `$inc` on the restaurant), then insert the party as `waiting`.
+2. **No duplicates:** a unique index on `email`, limited to *active* parties (waiting, ready or seated), rejects a second entry even when two requests race. The diner is sent to their existing party ("You're already on the list"). After their meal they can join again with the same email.
+3. Right after a join, the request runs `Settle` once, so a diner who walks into an empty restaurant is ready immediately instead of on the next tick.
+
+### Settling the queue (`Waitlist::Settle`)
+
+Each run does two steps, each as small transactions:
+
+1. **Finish service:** every seated party whose `service_ends_at` has passed becomes `completed`, and its seats are released.
+2. **Call the next party:** take the first waiting party by ticket number. If it fits, reserve its seats and mark it `ready`; repeat. If it doesn't fit, stop: nobody behind it skips ahead (strict first-in, first-out).
+
+**Why it can't overbook:** reserving uses a conditional update, "add N seats *only if* `seats_reserved <= 10 - N`", so the counter can never pass capacity. Every step also writes the restaurant document, so two runs at the same time (the scheduler and a join request) conflict, and MongoDB retries one of them. A test runs 8 settles in parallel threads and checks this. It fails when the transaction is removed.
+
+**Why a loop instead of scheduled jobs:** the loop keeps no plan in memory. Each tick reads the facts from the database ("whose service has ended?") and acts. If the scheduler crashes or restarts, nothing is lost: the next tick catches up. A per-party job ("finish party X at 12:00:30") would live in memory and vanish on restart, leaving those seats taken forever, unless we added Redis or a SQL-backed queue.
+
+### The other pieces
+
+- **Check in (`Waitlist::CheckIn`):** a conditional update `ready → seated` (only if still ready), which also sets `service_ends_at`, and `seats_occupied += size`. A double tap or two browsers seat the party once.
+- **Email (`Waitlist::NotifyReady`):** only the scheduler sends it. It emails every ready party that hasn't been emailed yet, then records `notified_at`. If sending fails, the party is still ready and the next tick retries.
+- **Live page:** waiting and seated pages poll `GET /parties/:token/status.json` every 2 seconds and reload when the status or place in line changes, so the server-rendered HTML is the only markup. The seated page counts down locally. If the network drops it says "Reconnecting…" and backs off. Without JavaScript, a Refresh link does the same job.
+- **Seeing your party anywhere:** a signed cookie remembers your party in this browser. The party link (also in the email) opens it in any other browser.
+
+### Stack
+
+- **Rails 8 + Mongoid** on MongoDB. Mongo is required by the spec; Mongoid is its official ODM.
+- **Server-rendered HTML with two tiny vanilla-JS islands** (`live_status`, `countdown`), loaded through an importmap with no build step. Not an SPA.
+- **MongoDB as a single-node replica set**, because multi-document transactions (party + restaurant counters) need one. The healthcheck initiates it, so there's no manual step.
+- **Mailpit** catches the emails locally, so no real mail provider is needed.
+- **Dev-mode Docker image** with the source bind-mounted, since the requirement is a local `docker compose up`.
 
 ## Scope decisions & known limitations
 
-### No check-in deadline
+The spec leaves gaps. These are the calls I made, weighed against the time available.
 
-When a party's table is ready, it keeps its seats until it checks in. There is no time limit and no "no-show" state.
-
-- **Why:** the spec doesn't define one. It says the next party's app shows a Check-in button when enough seats are free, and otherwise the queue waits. A deadline would add another timed transition, a race between "check in" and "expire", an extra screen and extra tests. I weighed that against the time available and the requirements actually given, and left it out.
-- **Drawback:** the queue is strict first-in, first-out. A ready party that never checks in (for example, they left) holds its seats, and everyone behind it waits indefinitely. A real restaurant wouldn't accept that.
-- **With more time:** a check-in window. A ready party that doesn't check in within N minutes becomes a no-show, its seats are released and the next party is called. Or a staff screen to skip a party. The seat accounting already separates *reserved* (ready + seated) from *occupied* (seated), so either would be one extra transition in the scheduler.
-- **Locally:** if a demo gets stuck behind an abandoned party, `docker compose down -v` resets the database.
+| Decision | Why | Cost / what I'd do next |
+|---|---|---|
+| **No check-in deadline, no "no-show"** | The spec says only that the next party gets a Check in button when seats are free, and otherwise the queue waits | A ready party that never checks in holds its seats, and everyone behind it waits. Next: a check-in window that releases the seats, or a staff "skip". The reserved/occupied split makes it one more scheduler step. Locally, `docker compose down -v` unsticks a demo |
+| **Strict first-in, first-out** | The spec says the system checks "the next party" and otherwise waits | Seats can sit idle while a big party at the head waits. Next: let smaller parties fill gaps |
+| **No wait-time estimate** | Not asked for, and an honest one is hard without a check-in deadline. A wrong estimate hurts trust more than none | Diners see their place in line instead |
+| **No "find my spot by email"** | Cross-browser access is already covered by the cookie, the party link and the email link. A lookup by email would show anyone's party to whoever knows the address | A diner on a new device before their email arrives can't get back. Next: an "email me my link" button |
+| **One restaurant, capacity in code** | The spec hardcodes 10 seats | Parties already reference a restaurant, so more venues is mostly routing |
+| **Polling, not push** | No extra infrastructure (WebSockets would need Redis) | Fine for one venue. Next: server-sent events |
+| **Tailwind, daisyUI and Lucide from a CDN** | No build step. The app's own JavaScript has no dependencies; these are styling and icons | Extra download (Tailwind compiles in the browser; Lucide ships every icon), and the page relies on the CDN. Next: compile CSS and icons at build time |
+| **No staff screen** | The spec's flow is entirely diner-driven | — |
 
 ## Troubleshooting
 
@@ -85,5 +131,6 @@ When a party's table is ready, it keeps its seats until it checks in. There is n
 |---|---|
 | `port is already allocated` | Another process uses 3000, 8025, 1025 or 27017. Stop it, or change the left-hand side of the port mapping in `docker-compose.yml` |
 | `web` waits for a long time on first start | `mongo` has to become healthy first (up to about a minute on first boot). Check with `docker compose ps` |
+| `mongo` exits right away (`docker compose ps -a` shows `Exited (1)`) | Check `docker compose logs mongo`. MongoDB refuses to start on Linux kernel 6.19+ (SERVER-121912). Update Docker Desktop (or your VM), then check the kernel with `docker info \| grep Kernel` |
 | Stale state while testing | `docker compose down -v` resets the database |
 | Code changes don't show up | The source is bind-mounted, so refresh the page. If you changed the `Gemfile`, run `docker compose build` |
